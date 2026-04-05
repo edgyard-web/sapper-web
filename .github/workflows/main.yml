@@ -18,6 +18,9 @@ jobs:
         run: pip install flet requests
       - name: Build Web
         run: flet build web . --base-url /sapper-web/ --yes
+      - name: Patch Index
+        run: |
+          sed -i 's|<base href="/">|<base href="/sapper-web/">|g' build/web/index.html
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -29,3 +32,4 @@ jobs:
       name: github-pages
     steps:
       - uses: actions/deploy-pages@v4
+
