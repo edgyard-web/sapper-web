@@ -1,4 +1,4 @@
-name: Deploy Flet App
+name: Deploy Web App
 on:
   push:
     branches: [ main ]
@@ -14,9 +14,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install flet requests
-      - run: flet build web main.py --base-url /sapper-web/
-      - uses: actions/upload-pages-artifact@v3
+      - name: Install dependencies
+        run: pip install flet requests
+      - name: Build Web
+        run: flet build web main.py --base-url /sapper-web/ --yes
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
   deploy:
