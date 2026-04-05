@@ -17,7 +17,7 @@ jobs:
       - name: Install dependencies
         run: pip install flet requests
       - name: Build Web
-        run: flet build web main.py --base-url /sapper-web/ --yes
+        run: flet build web . --base-url /sapper-web/ --yes
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
