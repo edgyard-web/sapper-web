@@ -16,10 +16,8 @@ jobs:
           python-version: '3.12'
       - name: Install dependencies
         run: pip install flet requests
-      - name: List files (for debug)
-        run: ls -R
       - name: Build Web
-        run: flet build web --module-name main --base-url /sapper-web/ --yes
+        run: flet build web main.py --base-url /sapper-web/ --yes
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
