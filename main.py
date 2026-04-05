@@ -73,4 +73,4 @@ async def main(page: ft.Page): # Добавили async
     page.add(logo, header, ft.Container(height=20), seed_field, ft.Container(height=10), btn, loading_status, result_area)
 
 # ПРАВИЛЬНЫЙ ЗАПУСК ДЛЯ ВЕБА
-ft.app(target=main, view=ft.AppView.WEB_BROWSER)
+ft.app(target=main)
