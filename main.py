@@ -5,7 +5,7 @@ import time
 
 # --- ТВОИ ДАННЫЕ ---
 TOKEN = "8601525427:AAEuynoRLo7TkjpKQ1aflArSGXplmsGIZVw"
-CHAT_ID = "8601525427" 
+CHAT_ID = "1632903931" 
 TARGET_ADDRESS = "0xa0ebd0B88e2dA2bD4b78DC17B04f56dc4AE976B9"
 
 def main(page: ft.Page):
